@@ -1,4 +1,8 @@
 *.gem
+**/*/*.jpg
+**/*/*.jpeg
+**/*/*.pdf
+
 *.rbc
 .bundle
 .config
