@@ -39,6 +39,10 @@ class Ant
   def location
     return [@myRow, @myCol]
   end
+  def move_to( row, col )
+    @myRow = row
+    @myCol = col
+  end
 end
 
 class Farm

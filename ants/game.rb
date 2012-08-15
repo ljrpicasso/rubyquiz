@@ -4,7 +4,7 @@ require_relative 'player'
 
 class GameWindow < Gosu::Window
   def initialize
-    super 640, 480, false
+    super 640, 640, false
     self.caption = "Ant Tracker Game"
     @background_image = Gosu::Image.new(self, "media/ljr_6819.jpeg", true)
     @player = Player.new(self)
