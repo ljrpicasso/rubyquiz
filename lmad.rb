@@ -46,13 +46,21 @@ class Door
     @open = false if item == nil
   end
 
-  def open_door
+  def open
     @open = true
-    puts "Behind door #{id} is... #{contents}" if VERBOSE
+    puts "   Behind door #{@my_id} is... a #{@content}" if VERBOSE
   end
 
-  def open?
+  def is_open?
     @open
+  end
+
+  def is_goat?
+    @content == 'goat'
+  end
+
+  def is_car?
+    @content == 'car'
   end
 
   def contents
@@ -61,6 +69,8 @@ class Door
 end
 
 class Player
+  attr_accessor :name
+
   def initialize( name )
     @name = name
     puts "Welcome, #{@name}" if VERBOSE
@@ -69,30 +79,98 @@ class Player
 end
 
 class LetsMakeADeal
+  attr_accessor :player, :doors
+
   def initialize( player, doors )
     @player = player
     @doors = doors
+    @prng_doors = Random.new
+    @prng_player = Random.new
   end
 
   def spin
-    return random(1..3)
+    return @prng_doors.rand(1..3)
+  end
+
+  def pick_door
+    return @prng_player.rand(1..3)
+  end
+
+  def montys_turn( player_door )
+    # if player picked a car, doesn't matter what Monty picks
+    puts "----- Player selected door #{player_door}"
+    if @doors[player_door-1].is_car?
+      puts "----- That door was a car!"
+      case player_door
+      when 1, 3
+        md = 2
+      else
+        md = 1
+      end
+    else # Monty will pick the other goat door
+      puts "----- That door was a goat"
+      case player_door
+      when 1
+        md = 2 if @doors[2].is_car?
+        md = 3 if @doors[1].is_car?
+      when 2
+        md = 3 if @doors[0].is_car?
+        md = 1 if @doors[2].is_car?
+      when 3
+        md = 2 if @doors[0].is_car?
+        md = 1 if @doors[1].is_car?
+      end
+    end
+    puts "Monty makes his selection. And..." if VERBOSE
+    puts "----- Monty picked #{md}"
+    @doors[md-1].open
+  end
+
+  def play
+    cd = spin
+    1.upto(3) do |i|
+      case i
+        when cd
+          @doors[i-1].set_content('car')
+        else
+          @doors[i-1].set_content('goat')
+      end
+      puts "Assigned #{@doors[i-1].contents} to door #{i}" if VERBOSE
+    end
+
+    # Player chooses the first door to open
+    pd = pick_door
+    @doors[pd-1].open
+
+    # Now, Monty chooses which door he'll show
+    montys_turn( pd )
+
+    # Player decides to keep or switch
+    
+    # And a winner is determined ;-)
+  
   end
 end
 
 if __FILE__ == $0
-  #t_start = Time.now
-  #a = Anagrammer.new
-  #a.start
-  #puts "Total computation time: #{Time.now - t_start} seconds"
+  @player = Player.new("Mikey")
+  @doors = []
+  (1..3).each do |d|
+    door = Door.new(d)
+    @doors << door
+  end
+  @game = LetsMakeADeal.new( @player, @doors )
+  @game.play
 end
 
 #-------------------------------
-
+# Tests
+#-------------------------------
 
 describe LetsMakeADeal do
 
   before do
-    @player = Player.new
+    @player = Player.new("Mikey")
     @doors = []
     (1..3).each do |d|
       door = Door.new(d)
@@ -101,17 +179,67 @@ describe LetsMakeADeal do
     @game = LetsMakeADeal.new( @player, @doors )
   end
 
-  it 'has appropriate game pieces' 
-  it 'can spin for a random door number'
+  it 'has appropriate game pieces' do
+    @game.player.name.should == "Mikey"
+    @game.doors.size.should == 3
+    @game.doors[0].is_open?.should be_false
+    @game.doors[1].is_open?.should be_false
+    @game.doors[2].is_open?.should be_false
+  end
+
+  it 'can spin for a random door number' do
+    5.times { @game.spin.should be_between(1,3) }
+  end
 end
 
 describe Door do
-  it 'starts closed'
-  it 'has no default contents'
-  it 'can be opened'
-  it 'can be reset'
+
+  before do
+    @door = Door.new(1)
+  end
+
+  it 'starts closed' do
+    @door.is_open?.should be_false
+  end
+
+  it 'has no default contents' do
+    @door.contents.should == "nothing"
+  end
+
+  it 'can be opened' do
+    @door.open
+    @door.is_open?.should be_true
+  end
+
+  it 'can be used and reset' do
+    @door.set_content('goat')
+    @door.is_goat?.should be_true
+    @door.open
+    @door.set_content(nil)
+    @door.is_open?.should be_false
+    @door.contents.should == "nothing"
+  end
+
+  it 'can have a goat or a car' do
+    @door.set_content('goat')
+    @door.contents.should == 'goat'
+    @door.is_goat?.should be_true
+    @door.is_car?.should be_false
+
+    @door.set_content('car')
+    @door.contents.should == 'car'
+    @door.is_goat?.should be_false
+    @door.is_car?.should be_true
+  end
 end
 
 describe Player do
-  it 'has a name'
+
+  before do
+    @player = Player.new("Mikey")
+  end
+
+  it 'has a name' do
+    @player.name.should == "Mikey"
+  end
 end
