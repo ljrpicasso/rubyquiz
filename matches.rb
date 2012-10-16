@@ -1,30 +1,8 @@
 require 'rspec'
 
 class Matcher
-  attr_accessor :text
 
-  def initialize
-    @text = ''
-  end
-
-  def match?
-    # maybe controversial, but if no brackets, it is balanced...
-    return true if @text.empty?
-
-    # first test is simple - unequal number of []'s
-    return false if Matcher.miscount @text
-
-    # second test - look for mismatched levels of depth
-    depth = 0
-    @text.each_char do |c| 
-      depth = depth - 1 if c == ']' and depth > 0
-      depth = depth + 1 if c == '['
-    end
-
-    return depth == 0
-  end
-
-  def self.match text
+  def self.match? text
     # maybe controversial, but if no brackets, it is balanced...
     return true if text.empty?
 
@@ -32,18 +10,24 @@ class Matcher
     return false if Matcher.miscount text
 
     # second test - look for mismatched levels of depth
-    depth = 0
+    depth_sq = depth_pa = depth_cu = 0
     text.each_char do |c| 
-      depth = depth - 1 if c == ']' and depth > 0
-      depth = depth + 1 if c == '['
+      depth_sq -=  1 if c == ']' and depth_sq > 0
+      depth_sq +=  1 if c == '['
+      depth_pa -=  1 if c == ')' and depth_pa > 0
+      depth_pa +=  1 if c == '('
+      depth_cu -=  1 if c == '}' and depth_cu > 0
+      depth_cu +=  1 if c == '{'
     end
 
-    return depth == 0
+    return depth_sq == 0 &&
+           depth_pa == 0 &&
+           depth_cu == 0
   end
 
   def self.miscount t = @text
-    left = Matcher.count '[', t
-    right = Matcher.count ']', t
+    left = Matcher.count '[{(', t
+    right = Matcher.count ']})', t
     left != right
   end
 
@@ -52,53 +36,31 @@ class Matcher
   end
 end
 
-describe "matcher" do
+
+describe :Matcher do
 
   it 'will match correct combinations of brackets' do
-    m = Matcher.new
     match_list = [
       '',
       '[]',
       '[][][[]]',
+      '{(s)[f,u,n]}',
+      '[]{}()',
     ]
     match_list.each do |text|
-      m.text = text
-      m.match?.should be_true
+      Matcher.match?(text).should be_true
     end
   end
 
   it 'will not match mismatched brackets' do
-    m = Matcher.new
     match_list = [
       ']',
-      '[[',
+      '[[))',
       '[][][[[]]',
-      '[[[[['
+      '}{)(]['
     ]
     match_list.each do |text|
-      m.text = text
-      m.match?.should be_false
-    end
-  end
-
-  it 'can be called on the class' do
-    match_list = [
-      '',
-      '[]',
-      '[][][[]]',
-    ]
-    match_list.each do |text|
-      Matcher.match(text).should be_true
-    end
-
-    match_list = [
-      ']',
-      '[[',
-      '[][][[[]]',
-      '[[[[['
-    ]
-    match_list.each do |text|
-      Matcher.match(text).should be_false
+      Matcher.match?(text).should be_false
     end
   end
 
@@ -107,24 +69,23 @@ end
 
 if __FILE__ == $0
 
-  m = Matcher.new
   match_list = [
+    '*',
     '[]',
     '][][',
     '][][[]',
     ']]][[[][',
-    '][]][][][[',
+    '][]*[][][[',
     '][[][]]]][[[',
-    ']][][[[]]][][[',
-    '[][[][][[][]]][]',
-    '[[[[[]]][[][]]][]]',
-    '[[[][]][][[]]][[][]]',
+    ']][][[{*}][][[',
+    '[][[][][[]()]][]',
+    '[[[[()]][[][]]][]]',
+    '[[*][]][][[]]]*[][]]',
     '[[]',
     '[]]',
   ]
 
   match_list.each do |text|
-    m.text = text
-    puts "#{m.match? ? 'OK:  ' : 'bad: '}#{text}"
+    puts "#{Matcher.match?(text) ? 'OK:  ' : 'bad: '}#{text}"
   end
 end
