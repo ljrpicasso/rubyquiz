@@ -69,9 +69,7 @@ class World
     end
           
     @cells.each do |cell|
-      if cell.tick! == false
-        @cells -= [cell]
-      else        
+      if cell.tick! != false
         new_cells << [cell.x, cell.y]
       end
     end
@@ -110,7 +108,7 @@ class World
         if has_cell_at?(x,y)
           line << "* "
         else
-          line << ". "
+          line << "  "
         end
       end
       Curses.setpos(y+2,4)
@@ -231,7 +229,7 @@ describe 'game of life' do
       @w.display
       Curses.refresh
       sleep 1.5
-      1.upto(30) do
+      1.upto(10) do
         @w.tick!
         @w.display
         Curses.refresh
